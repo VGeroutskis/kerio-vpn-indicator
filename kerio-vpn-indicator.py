@@ -317,25 +317,27 @@ class KerioVPNIndicator:
     
     def on_view_logs(self, widget):
         """Open logs in terminal"""
-        try:
-            subprocess.Popen(
-                ['gnome-terminal', '--', 'bash', '-c', 
-                 'journalctl -u kerio-kvc.service -f; exec bash']
-            )
-        except:
+        # List of terminal commands to try
+        terminals = [
+            ['gnome-terminal', '--', 'journalctl', '-u', 'kerio-kvc.service', '-f'],
+            ['konsole', '-e', 'journalctl', '-u', 'kerio-kvc.service', '-f'],
+            ['xfce4-terminal', '-e', 'journalctl -u kerio-kvc.service -f'],
+            ['mate-terminal', '-e', 'journalctl -u kerio-kvc.service -f'],
+            ['xterm', '-e', 'journalctl -u kerio-kvc.service -f'],
+            ['x-terminal-emulator', '-e', 'journalctl', '-u', 'kerio-kvc.service', '-f'],
+        ]
+        
+        for terminal_cmd in terminals:
             try:
-                subprocess.Popen(
-                    ['xfce4-terminal', '-e', 
-                     'bash -c "journalctl -u kerio-kvc.service -f; exec bash"']
-                )
-            except:
-                try:
-                    subprocess.Popen(
-                        ['xterm', '-e', 
-                         'bash -c "journalctl -u kerio-kvc.service -f; exec bash"']
-                    )
-                except:
-                    pass
+                subprocess.Popen(terminal_cmd)
+                return  # Success, exit
+            except FileNotFoundError:
+                continue  # Try next terminal
+            except Exception:
+                continue
+        
+        # If all failed, show notification
+        self.show_notification("Error", "Could not find a terminal emulator to open logs")
     
     def on_settings(self, widget):
         """Open settings editor"""

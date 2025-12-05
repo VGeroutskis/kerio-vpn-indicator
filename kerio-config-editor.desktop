@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Kerio VPN Settings
+Comment=Configure Kerio Control VPN connection settings
+Exec=/usr/local/bin/kerio-config-editor
+Icon=preferences-system-network
+Terminal=false
+Categories=Network;Settings;
+StartupNotify=true

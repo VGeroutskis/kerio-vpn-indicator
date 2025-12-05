@@ -33,6 +33,20 @@ if [ -f "/usr/local/bin/kerio-vpn-indicator" ]; then
     echo "✓ Removed"
 fi
 
+# Remove config editor
+if [ -f "/usr/local/bin/kerio-config-editor" ]; then
+    echo "Removing kerio-config-editor..."
+    sudo rm /usr/local/bin/kerio-config-editor
+    echo "✓ Removed"
+fi
+
+# Remove desktop files
+if [ -f "/usr/share/applications/kerio-config-editor.desktop" ]; then
+    echo "Removing desktop entry..."
+    sudo rm /usr/share/applications/kerio-config-editor.desktop
+    echo "✓ Removed"
+fi
+
 # Remove autostart entry
 if [ -f "$HOME/.config/autostart/kerio-vpn-indicator.desktop" ]; then
     echo "Removing autostart entry..."

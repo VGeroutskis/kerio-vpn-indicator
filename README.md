@@ -19,6 +19,7 @@ A universal system tray indicator for **Kerio Control VPN Client** that works ac
 - Connection duration timer
 - VPN IP address display
 - Server information
+- **Graphical settings editor** for server, username, password, port
 
 ✅ **Smart Features**
 - Auto-reconnect on disconnect (configurable)
@@ -152,7 +153,18 @@ kerio-vpn-indicator &
 - **Auto-reconnect** - Enable/disable automatic reconnection (up to 3 attempts)
 - **Copy IP Address** - Copy your VPN IP to clipboard
 - **View Logs** - Open service logs in terminal
+- **Settings** - Edit VPN connection settings (server, port, credentials)
 - **Quit** - Close the indicator
+
+### VPN Settings Editor
+
+Click **Settings...** in the menu or run `kerio-config-editor` to open the graphical settings editor:
+
+- Edit server address, port, username, and password
+- Test connection with one click
+- Auto-save and apply changes
+- Password visibility toggle
+- Load current settings from config file
 
 ### Keyboard Shortcuts
 

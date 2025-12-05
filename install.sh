@@ -72,6 +72,17 @@ sudo cp kerio-vpn-indicator.py /usr/local/bin/kerio-vpn-indicator
 sudo chmod +x /usr/local/bin/kerio-vpn-indicator
 echo "✓ Installed to /usr/local/bin/kerio-vpn-indicator"
 
+# Install the config editor
+echo "Installing kerio-config-editor..."
+sudo cp kerio-config-editor.py /usr/local/bin/kerio-config-editor
+sudo chmod +x /usr/local/bin/kerio-config-editor
+echo "✓ Installed to /usr/local/bin/kerio-config-editor"
+
+# Install desktop files
+echo "Installing desktop files..."
+sudo cp kerio-config-editor.desktop /usr/share/applications/
+echo "✓ Installed settings application menu entry"
+
 # Install desktop file for autostart
 echo "Installing autostart entry..."
 mkdir -p ~/.config/autostart

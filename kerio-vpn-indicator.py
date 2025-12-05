@@ -121,6 +121,11 @@ class KerioVPNIndicator:
         logs_item.connect('activate', self.on_view_logs)
         self.menu.append(logs_item)
         
+        # Settings
+        settings_item = Gtk.MenuItem(label="Settings...")
+        settings_item.connect('activate', self.on_settings)
+        self.menu.append(settings_item)
+        
         # Separator
         self.menu.append(Gtk.SeparatorMenuItem())
         
@@ -331,6 +336,13 @@ class KerioVPNIndicator:
                     )
                 except:
                     pass
+    
+    def on_settings(self, widget):
+        """Open settings editor"""
+        try:
+            subprocess.Popen(['kerio-config-editor'])
+        except Exception as e:
+            self.show_notification("Error", f"Could not open settings: {e}")
     
     def on_quit(self, widget):
         """Quit the indicator"""

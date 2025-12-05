@@ -85,9 +85,23 @@ sudo zypper install python3-gobject-Gdk typelib-1_0-Gtk-3_0 typelib-1_0-AppIndic
 # GNOME 45+ (Ubuntu 24.04+, Fedora 40+)
 gnome-extensions install appindicatorsupport@rgcjonas.gmail.com
 gnome-extensions enable appindicatorsupport@rgcjonas.gmail.com
+
+# Restart GNOME Shell
+# On X11: Press Alt+F2, type 'r', press Enter
+# On Wayland: Log out and log back in
 ```
 
 Or install via GNOME Extensions website: [AppIndicator Support](https://extensions.gnome.org/extension/615/appindicator-support/)
+
+**Alternative for GNOME 45+**: Install via Extension Manager:
+```bash
+# Fedora
+sudo dnf install gnome-shell-extension-manager
+# Ubuntu
+sudo apt install gnome-shell-extension-manager
+
+# Then open Extension Manager and search for "AppIndicator"
+```
 
 ## Installation
 
@@ -265,13 +279,29 @@ Edit `/etc/kerio-kvc.conf`:
 
 ### Indicator doesn't appear in system tray
 
-**GNOME users**: Install the AppIndicator extension:
+**GNOME users (Fedora, Ubuntu with GNOME, etc.)**: 
+
+GNOME Shell doesn't support system tray icons natively. You MUST install the AppIndicator extension:
+
 ```bash
+# Method 1: Using dnf/apt
+sudo dnf install gnome-shell-extension-appindicator  # Fedora
+sudo apt install gnome-shell-extension-appindicator  # Ubuntu
+
+# Method 2: Using Extension Manager GUI
+sudo dnf install gnome-shell-extension-manager  # Fedora
+# Open "Extension Manager" app and search for "AppIndicator"
+
+# Method 3: Manual installation
 gnome-extensions install appindicatorsupport@rgcjonas.gmail.com
 gnome-extensions enable appindicatorsupport@rgcjonas.gmail.com
+
+# Restart GNOME Shell:
+# X11: Alt+F2, type 'r', Enter
+# Wayland: Log out and log back in
 ```
 
-**Other DEs**: Check if `gir1.2-appindicator3-0.1` is installed.
+**Other DEs**: Check if `gir1.2-appindicator3-0.1` (Debian/Ubuntu) or `libappindicator-gtk3` (Fedora/Arch) is installed.
 
 ### Password prompts when connecting
 

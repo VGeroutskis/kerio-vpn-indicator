@@ -25,7 +25,7 @@ class KerioVPNIndicator:
         # Create indicator
         self.indicator = AppIndicator3.Indicator.new(
             self.app_id,
-            'network-vpn-disconnected',
+            'network-offline',
             AppIndicator3.IndicatorCategory.SYSTEM_SERVICES
         )
         self.indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
@@ -143,7 +143,7 @@ class KerioVPNIndicator:
             self.connect_item.set_label("Disconnect")
             self.reconnect_item.set_sensitive(True)
             self.copy_ip_item.set_sensitive(True)
-            self.indicator.set_icon('network-vpn')
+            self.indicator.set_icon('network-transmit-receive')
             
             # Update connection info
             info_parts = []
@@ -161,7 +161,7 @@ class KerioVPNIndicator:
             self.connect_item.set_label("Connect")
             self.reconnect_item.set_sensitive(False)
             self.copy_ip_item.set_sensitive(False)
-            self.indicator.set_icon('network-vpn-disconnected')
+            self.indicator.set_icon('network-offline')
             self.info_item.set_label("Not connected")
             self.connection_start_time = None
             self.vpn_ip = None

@@ -66,6 +66,24 @@ fi
 echo "All dependencies satisfied."
 echo ""
 
+# Check desktop environment and warn about GNOME
+if [ "$XDG_CURRENT_DESKTOP" = "GNOME" ]; then
+    echo "==========================================="
+    echo "GNOME Desktop Detected"
+    echo "==========================================="
+    echo ""
+    echo "GNOME requires the AppIndicator extension for system tray support."
+    echo ""
+    echo "To install it, run:"
+    echo "  gnome-extensions install appindicatorsupport@rgcjonas.gmail.com"
+    echo "  gnome-extensions enable appindicatorsupport@rgcjonas.gmail.com"
+    echo ""
+    echo "Or install from: https://extensions.gnome.org/extension/615/appindicator-support/"
+    echo ""
+    read -p "Press Enter to continue with installation..."
+    echo ""
+fi
+
 # Install the indicator script
 echo "Installing kerio-vpn-indicator..."
 sudo cp kerio-vpn-indicator.py /usr/local/bin/kerio-vpn-indicator

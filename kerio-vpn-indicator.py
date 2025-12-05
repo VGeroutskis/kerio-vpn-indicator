@@ -38,6 +38,7 @@ class KerioVPNIndicator:
         self.auto_reconnect_enabled = True
         self.reconnect_attempts = 0
         self.max_reconnect_attempts = 3
+        self.manual_disconnect = False  # Track manual disconnects
         
         # Load config
         self.config_file = '/etc/kerio-kvc.conf'
@@ -215,6 +216,7 @@ class KerioVPNIndicator:
             if not was_connected:
                 self.connection_start_time = time.time()
                 self.reconnect_attempts = 0
+                self.manual_disconnect = False  # Reset manual disconnect flag
                 self.show_notification("Kerio VPN Connected", 
                                      f"VPN connection established\nIP: {vpn_ip}")
         else:
@@ -222,8 +224,10 @@ class KerioVPNIndicator:
                 self.show_notification("Kerio VPN Disconnected", 
                                      "VPN connection lost")
                 
-                # Auto-reconnect logic
-                if self.auto_reconnect_enabled and self.reconnect_attempts < self.max_reconnect_attempts:
+                # Auto-reconnect logic - only if not manually disconnected
+                if (self.auto_reconnect_enabled and 
+                    not self.manual_disconnect and 
+                    self.reconnect_attempts < self.max_reconnect_attempts):
                     self.reconnect_attempts += 1
                     GLib.timeout_add_seconds(3, self.auto_reconnect)
         
@@ -241,6 +245,7 @@ class KerioVPNIndicator:
     def connect_vpn(self):
         """Start VPN connection"""
         try:
+            self.manual_disconnect = False  # Clear manual disconnect flag when connecting
             subprocess.run(
                 ['sudo', 'systemctl', 'start', 'kerio-kvc.service'],
                 check=True,
@@ -254,6 +259,7 @@ class KerioVPNIndicator:
     def disconnect_vpn(self):
         """Stop VPN connection"""
         try:
+            self.manual_disconnect = True  # Set flag to prevent auto-reconnect
             subprocess.run(
                 ['sudo', 'systemctl', 'stop', 'kerio-kvc.service'],
                 check=True,
@@ -283,6 +289,7 @@ class KerioVPNIndicator:
     
     def on_reconnect(self, widget):
         """Handle reconnect action"""
+        self.manual_disconnect = False  # Clear flag for reconnect
         self.disconnect_vpn()
         GLib.timeout_add_seconds(2, lambda: self.connect_vpn())
     

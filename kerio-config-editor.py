@@ -140,9 +140,10 @@ class KerioConfigEditor(Gtk.Window):
             return text
         
         # Characters that need encoding
+        # Note: We don't encode & and # since we use them in the entity format &#XX;
         special_chars = {
-            '!': '&#33;', '"': '&#34;', '#': '&#35;', '$': '&#36;',
-            '%': '&#37;', '&': '&#38;', "'": '&#39;', '<': '&#60;',
+            '!': '&#33;', '"': '&#34;', '$': '&#36;',
+            '%': '&#37;', "'": '&#39;', '<': '&#60;',
             '>': '&#62;', '@': '&#64;', '\\': '&#92;'
         }
         

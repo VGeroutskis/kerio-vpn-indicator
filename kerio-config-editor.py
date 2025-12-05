@@ -139,20 +139,29 @@ class KerioConfigEditor(Gtk.Window):
         if not text:
             return text
         
-        # Characters that need encoding
-        # Note: We don't encode & and # since we use them in the entity format &#XX;
+        # Map of characters to their HTML entity codes
         special_chars = {
-            '!': '&#33;', '"': '&#34;', '$': '&#36;',
-            '%': '&#37;', "'": '&#39;', '<': '&#60;',
-            '>': '&#62;', '@': '&#64;', '\\': '&#92;'
+            '!': '&#33;',
+            '"': '&#34;',
+            '#': '&#35;',
+            '$': '&#36;',
+            '%': '&#37;',
+            '&': '&#38;',
+            "'": '&#39;',
+            '<': '&#60;',
+            '>': '&#62;',
+            '@': '&#64;',
+            '\\': '&#92;'
         }
         
+        # Process character by character to avoid double-encoding
         result = []
         for char in text:
             if char in special_chars:
                 result.append(special_chars[char])
             else:
                 result.append(char)
+        
         return ''.join(result)
     
     def load_config(self):

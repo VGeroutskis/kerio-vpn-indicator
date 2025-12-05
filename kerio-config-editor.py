@@ -121,8 +121,8 @@ class KerioConfigEditor(Gtk.Window):
         close_button.connect("clicked", lambda w: self.destroy())
         button_box.pack_start(close_button, True, True, 0)
         
-        # Load current config on startup
-        GLib.idle_add(self.load_config)
+        # Load current config after window is shown
+        self.connect("realize", lambda w: GLib.timeout_add(100, self.load_config))
         
     def on_show_password_toggled(self, widget):
         """Toggle password visibility"""
@@ -169,8 +169,16 @@ class KerioConfigEditor(Gtk.Window):
                 # Load values
                 server = connection.find('server')
                 if server is not None and server.text:
-                    self.server_entry.set_text(self.decode_html_entities(server.text))
+                    server_text = self.decode_html_entities(server.text)
+                    # Check if port is included in server (format: server:port)
+                    if ':' in server_text:
+                        server_parts = server_text.rsplit(':', 1)
+                        self.server_entry.set_text(server_parts[0])
+                        self.port_entry.set_text(server_parts[1])
+                    else:
+                        self.server_entry.set_text(server_text)
                 
+                # Check for separate port element
                 port = connection.find('port')
                 if port is not None and port.text:
                     self.port_entry.set_text(port.text)
@@ -187,9 +195,11 @@ class KerioConfigEditor(Gtk.Window):
                 if description is not None and description.text:
                     self.description_entry.set_text(self.decode_html_entities(description.text))
                 
+                # Handle both 'yes'/'no' and '1'/'0' for active
                 active = connection.find('active')
                 if active is not None and active.text:
-                    self.autoconnect_check.set_active(active.text.lower() == 'yes')
+                    active_value = active.text.strip().lower()
+                    self.autoconnect_check.set_active(active_value in ['yes', '1', 'true'])
                 
                 self.show_status("Configuration loaded successfully", "success")
             else:
@@ -229,11 +239,9 @@ class KerioConfigEditor(Gtk.Window):
         connections = ET.SubElement(root, 'connections')
         connection = ET.SubElement(connections, 'connection', type='persistent')
         
+        # Combine server and port in Kerio's format (server:port)
         server_elem = ET.SubElement(connection, 'server')
-        server_elem.text = self.encode_html_entities(server)
-        
-        port_elem = ET.SubElement(connection, 'port')
-        port_elem.text = port
+        server_elem.text = f"{self.encode_html_entities(server)}:{port}"
         
         username_elem = ET.SubElement(connection, 'username')
         username_elem.text = self.encode_html_entities(username)
@@ -241,9 +249,11 @@ class KerioConfigEditor(Gtk.Window):
         password_elem = ET.SubElement(connection, 'password')
         password_elem.text = self.encode_html_entities(password)
         
+        # Kerio uses '1' for active, '0' for inactive
         active_elem = ET.SubElement(connection, 'active')
-        active_elem.text = 'yes' if self.autoconnect_check.get_active() else 'no'
+        active_elem.text = '1' if self.autoconnect_check.get_active() else '0'
         
+        # Add description if provided
         description = self.description_entry.get_text().strip()
         if description:
             desc_elem = ET.SubElement(connection, 'description')

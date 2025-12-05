@@ -182,6 +182,8 @@ class KerioVPNIndicator:
         was_connected = self.is_connected
         
         # Check service status
+        service_active = False
+        service_status = "unknown"
         try:
             result = subprocess.run(
                 ['systemctl', 'is-active', 'kerio-kvc.service'],
@@ -190,11 +192,14 @@ class KerioVPNIndicator:
                 timeout=5
             )
             service_active = result.returncode == 0
-        except:
+            service_status = result.stdout.strip()
+        except Exception as e:
+            print(f"Error checking service: {e}")
             service_active = False
         
         # Check network interface
         interface_up = False
+        interface_state = "down"
         vpn_ip = None
         try:
             result = subprocess.run(
@@ -204,17 +209,28 @@ class KerioVPNIndicator:
                 timeout=5
             )
             if result.returncode == 0:
-                interface_up = True
-                # Extract IP address
-                for line in result.stdout.split('\n'):
-                    if 'inet ' in line:
-                        vpn_ip = line.strip().split()[1].split('/')[0]
-                        break
-        except:
-            pass
+                # Check if interface is UP
+                if 'state UP' in result.stdout or 'state UNKNOWN' in result.stdout:
+                    interface_up = True
+                    interface_state = "up"
+                    # Extract IP address
+                    for line in result.stdout.split('\n'):
+                        if 'inet ' in line:
+                            vpn_ip = line.strip().split()[1].split('/')[0]
+                            break
+                else:
+                    interface_state = "exists but down"
+            else:
+                interface_state = "not found"
+        except Exception as e:
+            print(f"Error checking interface: {e}")
+            interface_state = "error"
         
-        # Update connection state
-        self.is_connected = service_active and interface_up
+        # Debug output
+        print(f"Service: {service_status} (active={service_active}), Interface: {interface_state} (up={interface_up}), IP: {vpn_ip}")
+        
+        # Update connection state - require BOTH service active AND interface up with IP
+        self.is_connected = service_active and interface_up and vpn_ip is not None
         
         if self.is_connected:
             self.vpn_ip = vpn_ip

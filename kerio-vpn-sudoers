@@ -1,0 +1,20 @@
+# Sudoers rules for Kerio VPN Indicator
+# This file allows passwordless control of the Kerio VPN service
+# Install with:
+#   sudo visudo -c -f kerio-vpn-sudoers
+#   sudo cp kerio-vpn-sudoers /etc/sudoers.d/kerio-vpn
+#   sudo chmod 440 /etc/sudoers.d/kerio-vpn
+
+# Allow starting, stopping, and checking status of kerio-kvc service
+%sudo ALL=(ALL) NOPASSWD: /usr/bin/systemctl start kerio-kvc.service
+%sudo ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop kerio-kvc.service
+%sudo ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart kerio-kvc.service
+%sudo ALL=(ALL) NOPASSWD: /usr/bin/systemctl status kerio-kvc.service
+%sudo ALL=(ALL) NOPASSWD: /usr/bin/systemctl is-active kerio-kvc.service
+
+# For non-Debian based systems, use 'wheel' group instead of 'sudo'
+%wheel ALL=(ALL) NOPASSWD: /usr/bin/systemctl start kerio-kvc.service
+%wheel ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop kerio-kvc.service
+%wheel ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart kerio-kvc.service
+%wheel ALL=(ALL) NOPASSWD: /usr/bin/systemctl status kerio-kvc.service
+%wheel ALL=(ALL) NOPASSWD: /usr/bin/systemctl is-active kerio-kvc.service

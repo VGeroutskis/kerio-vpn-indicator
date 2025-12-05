@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Kerio VPN Indicator
+Comment=System tray indicator for Kerio Control VPN
+Exec=/usr/local/bin/kerio-vpn-indicator
+Icon=network-vpn
+Terminal=false
+Categories=Network;System;
+StartupNotify=false
+X-GNOME-Autostart-enabled=true

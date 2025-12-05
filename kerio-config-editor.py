@@ -217,7 +217,7 @@ class KerioConfigEditor(Gtk.Window):
             self.show_status(f"Error loading config: {e}", "error")
             return False
         
-        return True
+        return False  # Don't repeat the timeout
     
     def save_config(self):
         """Save configuration to /etc/kerio-kvc.conf"""

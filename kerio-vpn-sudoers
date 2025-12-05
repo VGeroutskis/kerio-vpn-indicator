@@ -12,9 +12,17 @@
 %sudo ALL=(ALL) NOPASSWD: /usr/bin/systemctl status kerio-kvc.service
 %sudo ALL=(ALL) NOPASSWD: /usr/bin/systemctl is-active kerio-kvc.service
 
+# Allow reading and writing Kerio config file
+%sudo ALL=(ALL) NOPASSWD: /usr/bin/cat /etc/kerio-kvc.conf
+%sudo ALL=(ALL) NOPASSWD: /usr/bin/mv /tmp/kerio-kvc.conf.tmp /etc/kerio-kvc.conf
+%sudo ALL=(ALL) NOPASSWD: /usr/bin/chmod 600 /etc/kerio-kvc.conf
+
 # For non-Debian based systems, use 'wheel' group instead of 'sudo'
 %wheel ALL=(ALL) NOPASSWD: /usr/bin/systemctl start kerio-kvc.service
 %wheel ALL=(ALL) NOPASSWD: /usr/bin/systemctl stop kerio-kvc.service
 %wheel ALL=(ALL) NOPASSWD: /usr/bin/systemctl restart kerio-kvc.service
 %wheel ALL=(ALL) NOPASSWD: /usr/bin/systemctl status kerio-kvc.service
 %wheel ALL=(ALL) NOPASSWD: /usr/bin/systemctl is-active kerio-kvc.service
+%wheel ALL=(ALL) NOPASSWD: /usr/bin/cat /etc/kerio-kvc.conf
+%wheel ALL=(ALL) NOPASSWD: /usr/bin/mv /tmp/kerio-kvc.conf.tmp /etc/kerio-kvc.conf
+%wheel ALL=(ALL) NOPASSWD: /usr/bin/chmod 600 /etc/kerio-kvc.conf

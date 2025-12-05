@@ -259,7 +259,7 @@ class KerioConfigEditor(Gtk.Window):
         xml_lines.append(f'      <username>{self.encode_html_entities(username)}</username>')
         xml_lines.append(f'      <password>{self.encode_html_entities(password)}</password>')
         
-        # Get server fingerprint using openssl
+        # Get server fingerprint
         fingerprint = None
         try:
             # First try to preserve existing fingerprint
@@ -272,57 +272,32 @@ class KerioConfigEditor(Gtk.Window):
                     fp_elem = connection.find('fingerprint')
                     if fp_elem is not None and fp_elem.text:
                         fingerprint = fp_elem.text
+                        print(f"Preserving existing fingerprint: {fingerprint}")
         except:
             pass
         
-        # If no existing fingerprint, try to get it from the server
+        # If no existing fingerprint, get it from the server using MD5
         if not fingerprint:
             try:
-                print(f"Getting fingerprint from {server}:{port}...")
-                # Get the server certificate and calculate fingerprint
-                # Use echo to close stdin immediately
+                print(f"Getting MD5 fingerprint from {server}:{port}...")
                 result = subprocess.run(
-                    f'echo | openssl s_client -connect {server}:{port} -showcerts 2>/dev/null',
+                    f'openssl s_client -connect {server}:{port} < /dev/null 2>/dev/null | openssl x509 -fingerprint -md5 -noout',
                     shell=True,
                     capture_output=True,
                     text=True,
                     timeout=10
                 )
                 
-                if result.stdout:
-                    # Extract the certificate - openssl outputs to stdout
-                    cert_lines = []
-                    in_cert = False
+                if result.returncode == 0 and result.stdout:
+                    # Extract fingerprint from output like "MD5 Fingerprint=XX:XX:XX:..."
                     for line in result.stdout.split('\n'):
-                        if '-----BEGIN CERTIFICATE-----' in line:
-                            in_cert = True
-                            cert_lines = [line]
-                        elif in_cert:
-                            cert_lines.append(line)
-                            if '-----END CERTIFICATE-----' in line:
-                                break
-                    
-                    if cert_lines:
-                        cert_text = '\n'.join(cert_lines)
-                        # Calculate SHA1 fingerprint
-                        result = subprocess.run(
-                            ['openssl', 'x509', '-noout', '-fingerprint', '-sha1'],
-                            input=cert_text,
-                            capture_output=True,
-                            text=True,
-                            timeout=5
-                        )
-                        
-                        if result.returncode == 0 and result.stdout:
-                            # Extract fingerprint from output like "SHA1 Fingerprint=XX:XX:XX:..."
-                            for line in result.stdout.split('\n'):
-                                if 'Fingerprint=' in line:
-                                    fingerprint = line.split('=')[1].strip()
-                                    print(f"Got fingerprint: {fingerprint}")
-                                    break
+                        if 'Fingerprint=' in line:
+                            fingerprint = line.split('=')[1].strip()
+                            print(f"Got fingerprint: {fingerprint}")
+                            break
             except Exception as e:
                 print(f"Could not get fingerprint: {e}")
-                # Continue without fingerprint - Kerio will handle it
+                # Continue without fingerprint - Kerio will generate it on first connection
         
         if fingerprint:
             xml_lines.append(f'      <fingerprint>{fingerprint}</fingerprint>')

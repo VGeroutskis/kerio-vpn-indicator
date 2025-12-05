@@ -249,19 +249,72 @@ class KerioConfigEditor(Gtk.Window):
         xml_lines.append(f'      <username>{self.encode_html_entities(username)}</username>')
         xml_lines.append(f'      <password>{self.encode_html_entities(password)}</password>')
         
-        # Add fingerprint if it exists in current config
+        # Get server fingerprint using openssl
+        fingerprint = None
         try:
+            # First try to preserve existing fingerprint
             result = subprocess.run(['sudo', 'cat', self.config_file], 
                                    capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
                 root = ET.fromstring(result.stdout)
                 connection = root.find('.//connection[@type="persistent"]')
                 if connection is not None:
-                    fingerprint = connection.find('fingerprint')
-                    if fingerprint is not None and fingerprint.text:
-                        xml_lines.append(f'      <fingerprint>{fingerprint.text}</fingerprint>')
+                    fp_elem = connection.find('fingerprint')
+                    if fp_elem is not None and fp_elem.text:
+                        fingerprint = fp_elem.text
         except:
             pass
+        
+        # If no existing fingerprint, try to get it from the server
+        if not fingerprint:
+            try:
+                print(f"Getting fingerprint from {server}:{port}...")
+                # Get the server certificate and calculate fingerprint
+                result = subprocess.run(
+                    ['openssl', 's_client', '-connect', f'{server}:{port}', 
+                     '-showcerts', '</dev/null'],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                
+                if result.returncode == 0 or result.stdout:
+                    # Extract the certificate
+                    cert_lines = []
+                    in_cert = False
+                    for line in result.stdout.split('\n'):
+                        if '-----BEGIN CERTIFICATE-----' in line:
+                            in_cert = True
+                            cert_lines = [line]
+                        elif in_cert:
+                            cert_lines.append(line)
+                            if '-----END CERTIFICATE-----' in line:
+                                break
+                    
+                    if cert_lines:
+                        cert_text = '\n'.join(cert_lines)
+                        # Calculate SHA1 fingerprint
+                        result = subprocess.run(
+                            ['openssl', 'x509', '-noout', '-fingerprint', '-sha1'],
+                            input=cert_text,
+                            capture_output=True,
+                            text=True,
+                            timeout=5
+                        )
+                        
+                        if result.returncode == 0 and result.stdout:
+                            # Extract fingerprint from output like "SHA1 Fingerprint=XX:XX:XX:..."
+                            for line in result.stdout.split('\n'):
+                                if 'Fingerprint=' in line:
+                                    fingerprint = line.split('=')[1].strip()
+                                    print(f"Got fingerprint: {fingerprint}")
+                                    break
+            except Exception as e:
+                print(f"Could not get fingerprint: {e}")
+                # Continue without fingerprint - Kerio will handle it
+        
+        if fingerprint:
+            xml_lines.append(f'      <fingerprint>{fingerprint}</fingerprint>')
         
         xml_lines.append(f'      <active>{"1" if self.autoconnect_check.get_active() else "0"}</active>')
         

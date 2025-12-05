@@ -270,16 +270,17 @@ class KerioConfigEditor(Gtk.Window):
             try:
                 print(f"Getting fingerprint from {server}:{port}...")
                 # Get the server certificate and calculate fingerprint
+                # Use echo to close stdin immediately
                 result = subprocess.run(
-                    ['openssl', 's_client', '-connect', f'{server}:{port}', 
-                     '-showcerts', '</dev/null'],
+                    f'echo | openssl s_client -connect {server}:{port} -showcerts 2>/dev/null',
+                    shell=True,
                     capture_output=True,
                     text=True,
                     timeout=10
                 )
                 
-                if result.returncode == 0 or result.stdout:
-                    # Extract the certificate
+                if result.stdout:
+                    # Extract the certificate - openssl outputs to stdout
                     cert_lines = []
                     in_cert = False
                     for line in result.stdout.split('\n'):

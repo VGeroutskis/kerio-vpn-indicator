@@ -157,12 +157,20 @@ class KerioConfigEditor(Gtk.Window):
     def load_config(self):
         """Load configuration from /etc/kerio-kvc.conf"""
         try:
-            if not os.path.exists(self.config_file):
+            # Read config file with sudo
+            result = subprocess.run(
+                ['sudo', 'cat', self.config_file],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            
+            if result.returncode != 0:
                 self.show_status("Configuration file not found. Please fill in the settings.", "warning")
                 return False
             
-            tree = ET.parse(self.config_file)
-            root = tree.getroot()
+            # Parse XML from string
+            root = ET.fromstring(result.stdout)
             
             connection = root.find('.//connection[@type="persistent"]')
             if connection is not None:

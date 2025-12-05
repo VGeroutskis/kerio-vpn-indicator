@@ -362,33 +362,55 @@ class KerioConfigEditor(Gtk.Window):
     
     def on_test_clicked(self, widget):
         """Test connection button clicked"""
+        print("Test connection button clicked")
+        
         # Save first
         if not self.save_config():
+            print("Config save failed, aborting test")
             return
         
-        self.show_status("Testing connection...", "info")
+        print("Config saved, restarting service...")
+        self.show_status("Restarting VPN service...", "info")
         
-        # Try to connect
+        # Try to restart service
         try:
-            subprocess.run(
+            result = subprocess.run(
                 ['sudo', 'systemctl', 'restart', 'kerio-kvc.service'],
-                check=True,
+                capture_output=True,
+                text=True,
                 timeout=10
             )
             
-            # Wait and check status multiple times (VPN takes time to connect)
+            if result.returncode != 0:
+                print(f"Service restart failed: {result.stderr}")
+                self.show_status(f"Failed to restart service: {result.stderr}", "error")
+                return
+            
+            print("Service restarted successfully, starting connection check...")
+            self.show_status("Testing connection...", "info")
+            
+            # Initialize test counters
             self.test_check_count = 0
+            self.test_max_attempts = 10
+            
+            # Start checking connection status
             GLib.timeout_add_seconds(2, self.check_connection_status)
             
+        except subprocess.TimeoutExpired:
+            print("Service restart timeout")
+            self.show_status("Service restart timeout", "error")
         except Exception as e:
+            print(f"Service restart error: {e}")
             self.show_status(f"Connection test failed: {e}", "error")
     
     def check_connection_status(self):
-        """Check if VPN connected successfully"""
+        """Check if VPN connected successfully - returns True to continue, False to stop"""
         self.test_check_count += 1
+        print(f"\nConnection check attempt {self.test_check_count}/{self.test_max_attempts}")
         
         try:
-            # Check service status
+            # Step 1: Check if service is running
+            print("  Checking service status...")
             result = subprocess.run(
                 ['systemctl', 'is-active', 'kerio-kvc.service'],
                 capture_output=True,
@@ -396,43 +418,65 @@ class KerioConfigEditor(Gtk.Window):
                 timeout=5
             )
             
-            if result.returncode == 0:
-                # Check interface
-                result = subprocess.run(
-                    ['ip', 'addr', 'show', 'kvnet'],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
-                )
-                
-                if result.returncode == 0:
-                    # Extract IP
-                    for line in result.stdout.split('\n'):
-                        if 'inet ' in line:
-                            ip = line.strip().split()[1].split('/')[0]
-                            self.show_status(f"Connection successful! VPN IP: {ip}", "success")
-                            return False
-                    
-                    # No IP yet, retry if under max attempts
-                    if self.test_check_count < 10:  # Try for up to 20 seconds
-                        self.show_status(f"Connecting... (attempt {self.test_check_count}/10)", "info")
-                        return True  # Continue checking
-                    else:
-                        self.show_status("Connection timeout - VPN did not get IP address", "error")
+            service_status = result.stdout.strip()
+            print(f"  Service status: {service_status} (returncode={result.returncode})")
+            
+            if result.returncode != 0:
+                print(f"  Service not active")
+                self.show_status("Service not active - check credentials and server", "error")
+                return False  # Stop checking
+            
+            # Step 2: Check if interface exists and is up
+            print("  Checking interface kvnet...")
+            result = subprocess.run(
+                ['ip', 'addr', 'show', 'kvnet'],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if result.returncode != 0:
+                print(f"  Interface kvnet not found")
+                if self.test_check_count < self.test_max_attempts:
+                    self.show_status(f"Waiting for interface... ({self.test_check_count}/{self.test_max_attempts})", "info")
+                    return True  # Continue checking
                 else:
-                    # Interface not up yet, retry
-                    if self.test_check_count < 10:
-                        self.show_status(f"Waiting for interface... ({self.test_check_count}/10)", "info")
-                        return True  # Continue checking
-                    else:
-                        self.show_status("Connection timeout - interface not up", "error")
+                    self.show_status("Timeout - VPN interface not created", "error")
+                    return False  # Stop checking
+            
+            # Step 3: Extract IP address
+            print("  Interface found, looking for IP address...")
+            ip_found = None
+            for line in result.stdout.split('\n'):
+                if 'inet ' in line and 'inet6' not in line:
+                    parts = line.strip().split()
+                    if len(parts) >= 2:
+                        ip_found = parts[1].split('/')[0]
+                        print(f"  Found IP: {ip_found}")
+                        break
+            
+            if ip_found:
+                print(f"  SUCCESS! VPN connected with IP {ip_found}")
+                self.show_status(f"✓ Connection successful! VPN IP: {ip_found}", "success")
+                return False  # Stop checking
             else:
-                self.show_status("Connection failed - check credentials and server", "error")
+                print(f"  No IP address assigned yet")
+                if self.test_check_count < self.test_max_attempts:
+                    self.show_status(f"Connecting... ({self.test_check_count}/{self.test_max_attempts})", "info")
+                    return True  # Continue checking
+                else:
+                    print(f"  TIMEOUT - No IP after {self.test_max_attempts} attempts")
+                    self.show_status("Timeout - VPN did not get IP address", "error")
+                    return False  # Stop checking
                 
+        except subprocess.TimeoutExpired:
+            print(f"  Command timeout")
+            self.show_status("Check timeout - command took too long", "error")
+            return False  # Stop checking
         except Exception as e:
+            print(f"  Error during check: {e}")
             self.show_status(f"Error checking status: {e}", "error")
-        
-        return False
+            return False  # Stop checking
 
 def main():
     # Check if running in terminal

@@ -320,11 +320,11 @@ class KerioVPNIndicator:
         # List of terminal commands to try
         terminals = [
             ['gnome-terminal', '--', 'journalctl', '-u', 'kerio-kvc.service', '-f'],
-            ['konsole', '-e', 'journalctl', '-u', 'kerio-kvc.service', '-f'],
-            ['xfce4-terminal', '-e', 'journalctl -u kerio-kvc.service -f'],
+            ['konsole', '-e', 'journalctl -u kerio-kvc.service -f'],
+            ['xfce4-terminal', '--hold', '-e', 'journalctl -u kerio-kvc.service -f'],
             ['mate-terminal', '-e', 'journalctl -u kerio-kvc.service -f'],
-            ['xterm', '-e', 'journalctl -u kerio-kvc.service -f'],
-            ['x-terminal-emulator', '-e', 'journalctl', '-u', 'kerio-kvc.service', '-f'],
+            ['xterm', '-hold', '-e', 'journalctl -u kerio-kvc.service -f'],
+            ['x-terminal-emulator', '-e', 'journalctl -u kerio-kvc.service -f'],
         ]
         
         for terminal_cmd in terminals:

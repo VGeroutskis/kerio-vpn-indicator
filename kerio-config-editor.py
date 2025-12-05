@@ -370,19 +370,22 @@ class KerioConfigEditor(Gtk.Window):
         # Try to connect
         try:
             subprocess.run(
-                ['sudo', 'systemctl', 'start', 'kerio-kvc.service'],
+                ['sudo', 'systemctl', 'restart', 'kerio-kvc.service'],
                 check=True,
                 timeout=10
             )
             
-            # Wait a bit and check status
-            GLib.timeout_add_seconds(3, self.check_connection_status)
+            # Wait and check status multiple times (VPN takes time to connect)
+            self.test_check_count = 0
+            GLib.timeout_add_seconds(2, self.check_connection_status)
             
         except Exception as e:
             self.show_status(f"Connection test failed: {e}", "error")
     
     def check_connection_status(self):
         """Check if VPN connected successfully"""
+        self.test_check_count += 1
+        
         try:
             # Check service status
             result = subprocess.run(
@@ -409,9 +412,19 @@ class KerioConfigEditor(Gtk.Window):
                             self.show_status(f"Connection successful! VPN IP: {ip}", "success")
                             return False
                     
-                    self.show_status("Service running but no IP assigned yet", "warning")
+                    # No IP yet, retry if under max attempts
+                    if self.test_check_count < 10:  # Try for up to 20 seconds
+                        self.show_status(f"Connecting... (attempt {self.test_check_count}/10)", "info")
+                        return True  # Continue checking
+                    else:
+                        self.show_status("Connection timeout - VPN did not get IP address", "error")
                 else:
-                    self.show_status("Service running but interface not up", "warning")
+                    # Interface not up yet, retry
+                    if self.test_check_count < 10:
+                        self.show_status(f"Waiting for interface... ({self.test_check_count}/10)", "info")
+                        return True  # Continue checking
+                    else:
+                        self.show_status("Connection timeout - interface not up", "error")
             else:
                 self.show_status("Connection failed - check credentials and server", "error")
                 

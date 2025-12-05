@@ -242,41 +242,42 @@ class KerioConfigEditor(Gtk.Window):
             self.show_status("Password is required", "error")
             return False
         
-        # Create XML
-        root = ET.Element('config')
-        connections = ET.SubElement(root, 'connections')
-        connection = ET.SubElement(connections, 'connection', type='persistent')
+        # Build XML manually to avoid double-encoding
+        xml_lines = ['<config>', '  <connections>', '    <connection type="persistent">']
         
-        # Combine server and port in Kerio's format (server:port)
-        server_elem = ET.SubElement(connection, 'server')
-        server_elem.text = f"{self.encode_html_entities(server)}:{port}"
+        xml_lines.append(f'      <server>{self.encode_html_entities(server)}:{port}</server>')
+        xml_lines.append(f'      <username>{self.encode_html_entities(username)}</username>')
+        xml_lines.append(f'      <password>{self.encode_html_entities(password)}</password>')
         
-        username_elem = ET.SubElement(connection, 'username')
-        username_elem.text = self.encode_html_entities(username)
+        # Add fingerprint if it exists in current config
+        try:
+            result = subprocess.run(['sudo', 'cat', self.config_file], 
+                                   capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                root = ET.fromstring(result.stdout)
+                connection = root.find('.//connection[@type="persistent"]')
+                if connection is not None:
+                    fingerprint = connection.find('fingerprint')
+                    if fingerprint is not None and fingerprint.text:
+                        xml_lines.append(f'      <fingerprint>{fingerprint.text}</fingerprint>')
+        except:
+            pass
         
-        password_elem = ET.SubElement(connection, 'password')
-        password_elem.text = self.encode_html_entities(password)
+        xml_lines.append(f'      <active>{"1" if self.autoconnect_check.get_active() else "0"}</active>')
         
-        # Kerio uses '1' for active, '0' for inactive
-        active_elem = ET.SubElement(connection, 'active')
-        active_elem.text = '1' if self.autoconnect_check.get_active() else '0'
-        
-        # Add description if provided
         description = self.description_entry.get_text().strip()
         if description:
-            desc_elem = ET.SubElement(connection, 'description')
-            desc_elem.text = self.encode_html_entities(description)
+            xml_lines.append(f'      <description>{self.encode_html_entities(description)}</description>')
         
-        # Generate XML string
-        tree = ET.ElementTree(root)
-        ET.indent(tree, space='  ')
+        xml_lines.extend(['    </connection>', '  </connections>', '</config>'])
+        
+        xml_content = '\n'.join(xml_lines) + '\n'
         
         # Write to temporary file
         temp_file = '/tmp/kerio-kvc.conf.tmp'
         try:
-            with open(temp_file, 'wb') as f:
-                f.write(b'<?xml version="1.0" encoding="UTF-8"?>\n')
-                tree.write(f, encoding='utf-8', xml_declaration=False)
+            with open(temp_file, 'w') as f:
+                f.write(xml_content)
             
             # Move to final location with sudo
             result = subprocess.run(
